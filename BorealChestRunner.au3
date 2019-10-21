@@ -232,10 +232,12 @@ Func ChestRun()
 	AdlibUnRegister("Running")
 	Do
 		Resign()
-		RndSleep(3000)
+		RndSleep(8000)
 	Until GetIsDead()
 
 	ReturnToOutpost()
+	WaitForLoad()
+	RndSleep(4000)
 EndFunc
 
 Func Running()
@@ -259,7 +261,7 @@ Func DoChest()
 	$oldCoordsY = DllStructGetData($chest, "Y")
 
 	Do
-		Sleep(100)
+		Sleep(1000)
 	Until CheckArea($oldCoordsX, $oldCoordsY) Or TimerDiff($TimeCheck) > 5000 Or $WeAreDead
 
 	OpenChest()
@@ -269,8 +271,8 @@ Func DoChest()
 	PickUpItem($item)
 
 	Do
-		Sleep(100)
-	Until DllStructGetData($item, 'AgentID') == 1 Or TimerDiff($TimeCheck) > 16000 or $WeAreDead
+		Sleep(1000)
+	Until DllStructGetData($item, 'AgentID') == 1 Or TimerDiff($TimeCheck) > 10000 or $WeAreDead
 EndFunc ;DoChest
 #EndRegion Chestrun
 
