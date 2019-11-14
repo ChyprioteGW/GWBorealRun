@@ -3,7 +3,7 @@
 #include <GUIConstantsEx.au3>
 #include <StaticConstants.au3>
 #include <WindowsConstants.au3>
-#include <GWA2.au3>
+#include "../GWA2.au3"
 #include <SimpleInventory.au3>
 
 Opt("GUIOnEventMode", True)
