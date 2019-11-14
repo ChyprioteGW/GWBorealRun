@@ -1,20 +1,20 @@
 #include-once
 #Region About
 #cs
-	This is a simple inventory management without a GUI
-	The bot will Store the items you want
-	Identify whatever is left on your inventory
-	Sell what he needs to
+    This is a simple inventory management without a GUI
+    The bot will Store the items you want
+    Identify whatever is left on your inventory
+    Sell what he needs to
 
-	Everything is easily configurable
-	You can add more configuration very easily if you know what you're doing
+    Everything is easily configurable
+    You can add more configuration very easily if you know what you're doing
 
-	Configuration:
-	  - set $BAGS_TO_USE to the number of bafs you'll be using. The bot will not touch the others
-	  - edit CanStore() function to decide what items to keep in your chest
-	  - edit CanSell()  function to decide what items to sell to the merchant
-	Note that Identify() will identify everything in your inventory, you can edit it to filter which items to ident
-	Constants are defined at the bottom of this file
+    Configuration:
+    - set $BAGS_TO_USE to the number of bafs you'll be using. The bot will not touch the others
+    - edit CanStore() function to decide what items to keep in your chest
+    - edit CanSell()  function to decide what items to sell to the merchant
+    Note that Identify() will identify everything in your inventory, you can edit it to filter which items to ident
+    Constants are defined at the bottom of this file
 #ce
 #EndRegion About
 
@@ -23,285 +23,285 @@ Global Const $THIRD_DIALOG = 0x7F
 
 #Region Inventory
 Func Inventory()
-	Out("Going to merchant")
-	GoToNPC(GetNearestNPCToCoords(-19166, 17980))
-	RndSleep(550)
-	Dialog($THIRD_DIALOG)
-	RndSleep(550)
+    Out("Going to merchant")
+    GoToNPC(GetNearestNPCToCoords(-19166, 17980))
+    RndSleep(550)
+    Dialog($THIRD_DIALOG)
+    RndSleep(550)
 
-	Out("Storing")
-	Store()
-	Out("Identifying")
-	Identify()
-	Out("Salavaging")
-	Salvage()
-	Out("Selling")
-	Sell()
+    Out("Storing")
+    Store()
+    Out("Identifying")
+    Identify()
+    Out("Salavaging")
+    Salvage()
+    Out("Selling")
+    Sell()
 
-	RndSleep(1000)
-	If GetGoldCharacter() > 80000 Then
-		Out("Storing 80K")
-		DepositGold(80000)
-	EndIf
+    RndSleep(1000)
+    If GetGoldCharacter() > 80000 Then
+        Out("Storing 80K")
+        DepositGold(80000)
+    EndIf
 EndFunc
 
 ;Counts open slots in your Imventory
 Func CountSlots()
-	Local $bag, $count = 0
+    Local $bag, $count = 0
 
-	For $i = 1 To $BAGS_TO_USE
-		$bag = GetBag($i)
-		$count += DllStructGetData($bag, 'Slots') - DllStructGetData($bag, 'ItemsCount')
-	Next
+    For $i = 1 To $BAGS_TO_USE
+        $bag = GetBag($i)
+        $count += DllStructGetData($bag, 'Slots') - DllStructGetData($bag, 'ItemsCount')
+    Next
 
-	Return $count
+    Return $count
 EndFunc ;CountSlots
 
 Func InventoryIsFull()
-	Return CountSlots() = 0
+    Return CountSlots() = 0
 EndFunc ;InventoryIsFull
 #EndRegion Inventory
 
 #Region Store
 Func Store()
-	Local $item, $bag
+    Local $item, $bag
 
-	For $i = 1 To $BAGS_TO_USE
-		$bag = Getbag($i)
+    For $i = 1 To $BAGS_TO_USE
+        $bag = Getbag($i)
 
-		For $j = 1 To DllStructGetData($bag, 'Slots')
-			$item = GetItemBySlot($i, $j)
-			If DllStructGetData($item, "Id") == 0 Then ContinueLoop
-			If CanStore($item) Then
-				StoreItem($item) ;hasSleep
-				RndSleep(250)
-			EndIf
-		Next
-	Next
+        For $j = 1 To DllStructGetData($bag, 'Slots')
+            $item = GetItemBySlot($i, $j)
+            If DllStructGetData($item, "Id") == 0 Then ContinueLoop
+            If CanStore($item) Then
+                StoreItem($item) ;hasSleep
+                RndSleep(250)
+            EndIf
+        Next
+    Next
 EndFunc ;Store
 Func CanStore($item)
-	Local $ModelID = DllStructGetData($item, "ModelId")
-	Local $rarity = GetRarity($item)
-	Local $requirement = GetItemReq($item)
+    Local $ModelID = DllStructGetData($item, "ModelId")
+    Local $rarity = GetRarity($item)
+    Local $requirement = GetItemReq($item)
 
-	If $rarity == $RARITY_GOLD		  Then Return True
-	If $rarity == $RARITY_BLUE		  Then Return False
-	If $rarity == $RARITY_PURPLE		Then Return False
+    If $rarity == $RARITY_GOLD		  Then Return True
+    If $rarity == $RARITY_BLUE		  Then Return False
+    If $rarity == $RARITY_PURPLE		Then Return False
 
-	If $ModelID == $ITEM_DYES Then
-		;Uncomment for Only black and white dyes
-		;Local $ExtraID = DllStructGetData($item, "ExtraId")
-		;Return $ExtraID <> $ITEM_BLACK_DYE And $ExtraID <> $ITEM_WHITE_DYE)
-		Return False
-	EndIf ;Dies
+    If $ModelID == $ITEM_DYES Then
+        ;Uncomment for Only black and white dyes
+        ;Local $ExtraID = DllStructGetData($item, "ExtraId")
+        ;Return $ExtraID <> $ITEM_BLACK_DYE And $ExtraID <> $ITEM_WHITE_DYE)
+        Return False
+    EndIf ;Dies
 
-	If $ModelID == $ITEM_DIESSA_CHALICE Then Return True
-	If $ModelID == $ITEM_RIN_RELIC Then Return True
-	If $ModelID == $ITEM_LOCKPICK Then Return True
-	If InArray($ModelID, $ALL_TOMES_ARRAY)		    Then Return True ;Tomes
-	If InArray($ModelID, $ALL_MATERIALS_ARRAY)		Then Return True ;Materials
-	If InArray($ModelID, $STACKABLE_TROPHIES_ARRAY)	Then Return False ;Trophies
-	If InArray($ModelID, $ALL_TITLE_ITEMS)			Then Return True ;Party, Alcohol, Sweet
-	If InArray($ModelID, $ALL_SCROLLS_ARRAY)		Then Return False ;Scrolls
-	If $ModelID == $ITEM_LOCKPICK		   		    Then Return False ;Lockpicks, Kits
-	If InArray($ModelID, $WEAPON_MOD_ARRAY)			Then Return False ;Weapon mods
+    If $ModelID == $ITEM_DIESSA_CHALICE Then Return True
+    If $ModelID == $ITEM_RIN_RELIC Then Return True
+    If $ModelID == $ITEM_LOCKPICK Then Return True
+    If InArray($ModelID, $ALL_TOMES_ARRAY)		    Then Return True ;Tomes
+    If InArray($ModelID, $ALL_MATERIALS_ARRAY)		Then Return True ;Materials
+    If InArray($ModelID, $STACKABLE_TROPHIES_ARRAY)	Then Return False ;Trophies
+    If InArray($ModelID, $ALL_TITLE_ITEMS)			Then Return True ;Party, Alcohol, Sweet
+    If InArray($ModelID, $ALL_SCROLLS_ARRAY)		Then Return False ;Scrolls
+    If $ModelID == $ITEM_LOCKPICK		   		    Then Return False ;Lockpicks, Kits
+    If InArray($ModelID, $WEAPON_MOD_ARRAY)			Then Return False ;Weapon mods
 
-	; TODO: do not pickup those
-	If InArray($ModelID, $MAP_PIECE_ARRAY)			Then Return False
-	If $rarity == $RARITY_WHITE 					Then Return False
+    ; TODO: do not pickup those
+    If InArray($ModelID, $MAP_PIECE_ARRAY)			Then Return False
+    If $rarity == $RARITY_WHITE 					Then Return False
 
-	Return False
+    Return False
 EndFunc ;CanStore
 Func StoreItem($item)
-	Local $slot
+    Local $slot
 	
-	If InArray(DllStructGetData($item, 'Type'), $UNSTACKABLES) Then Return StoreInEmptySlot($item)
+    If InArray(DllStructGetData($item, 'Type'), $UNSTACKABLES) Then Return StoreInEmptySlot($item)
 
-	For $i = 8 To 16
-		$slot = FindItemInStorage($i, $item)
-		If $slot <> 0 Then ExitLoop
-	Next
-	If $slot == 0 Then Return StoreInEmptySlot($item)
+    For $i = 8 To 16
+        $slot = FindItemInStorage($i, $item)
+        If $slot <> 0 Then ExitLoop
+    Next
+    If $slot == 0 Then Return StoreInEmptySlot($item)
 
-	MoveItem($item, getBag($i), $slot)
-	RndSleep(500)
-	Return True
+    MoveItem($item, getBag($i), $slot)
+    RndSleep(500)
+    Return True
 EndFunc ;StoreItem
 Func FindItemInStorage($bagIndex, $item)
-	Local $slot, $inSlot
-	Local $ModelID = DllStructGetData($item, 'ModelID')
-	Local $ExtraID = DllStructGetData($item, 'ExtraID')
+    Local $slot, $inSlot
+    Local $ModelID = DllStructGetData($item, 'ModelID')
+    Local $ExtraID = DllStructGetData($item, 'ExtraID')
 
-	For $slot = 1 To DllStructGetData(GetBag($bagIndex), 'Slots')
-		$inSlot = GetItemBySlot($bagIndex, $slot)
-		If DllStructGetData($inSlot, 'ModelID') == $ModelID And DllStructGetData($inSlot, 'ExtraID') == $ExtraID And DllStructGetData($inSlot, 'Quantity') < 250 Then
-			SetExtended($slot)
-			Return $slot
-		EndIf
-	Next
+    For $slot = 1 To DllStructGetData(GetBag($bagIndex), 'Slots')
+        $inSlot = GetItemBySlot($bagIndex, $slot)
+        If DllStructGetData($inSlot, 'ModelID') == $ModelID And DllStructGetData($inSlot, 'ExtraID') == $ExtraID And DllStructGetData($inSlot, 'Quantity') < 250 Then
+            SetExtended($slot)
+            Return $slot
+        EndIf
+    Next
 
-	Return 0
+    Return 0
 EndFunc ;FindItemInStorage
 Func StoreInEmptySlot($item)
-	Local $inSlot, $slot
+    Local $inSlot, $slot
 
-	For $bagIndex = 8 To 16
-		For $slot = 1 To DllStructGetData(GetBag($bagIndex), 'Slots')
-			$inSlot = GetItemBySlot($bagIndex, $slot)
-			If DllStructGetData($inSlot, 'ID') == 0 Then
-				SetExtended($slot)
-				MoveItem($item, getBag($bagIndex), $slot)
-				Return True
-			EndIf
-		Next
-	Next
+    For $bagIndex = 8 To 16
+        For $slot = 1 To DllStructGetData(GetBag($bagIndex), 'Slots')
+            $inSlot = GetItemBySlot($bagIndex, $slot)
+            If DllStructGetData($inSlot, 'ID') == 0 Then
+                SetExtended($slot)
+                MoveItem($item, getBag($bagIndex), $slot)
+                Return True
+            EndIf
+        Next
+    Next
 
-	Return 0
+    Return 0
 EndFunc ;StoreInEmptySlot
 #EndRegion Store
 
 #Region Identification
 Func Identify()
-	Local $item, $bag
+    Local $item, $bag
 	
-	RetrieveIdentificationKit()
-	For $i = 1 To $BAGS_TO_USE
-		$bag = GetBag($i)
+    RetrieveIdentificationKit()
+    For $i = 1 To $BAGS_TO_USE
+        $bag = GetBag($i)
 		
-		For $j = 1 To DllStructGetData($bag, "slots")
-			$item = GetItemBySlot($i, $j)
-			If DllStructGetData($item, "Id") == 0 Then ContinueLoop
-			IdentifyItem($item) ;hasSleep
-		Next
-	Next
+        For $j = 1 To DllStructGetData($bag, "slots")
+            $item = GetItemBySlot($i, $j)
+            If DllStructGetData($item, "Id") == 0 Then ContinueLoop
+            IdentifyItem($item) ;hasSleep
+        Next
+    Next
 EndFunc ;Identify
 Func RetrieveIdentificationKit()
-	If FindIdentificationKit() = 0 Then
-		If GetGoldCharacter() < 500 And GetGoldStorage() > 499 Then
-			WithdrawGold(500)
-			RndSleep(500)
-		EndIf
-		Local $J = 0
-		Do
-			BuySuperiorIdentificationKit()
-			RndSleep(500)
-			$J = $J + 1
-		Until FindIdentificationKit() <> 0 Or $J = 3
-		If $J = 3 Then Exit
-		RndSleep(500)
-	EndIf
+    If FindIdentificationKit() = 0 Then
+        If GetGoldCharacter() < 500 And GetGoldStorage() > 499 Then
+            WithdrawGold(500)
+            RndSleep(500)
+        EndIf
+        Local $J = 0
+        Do
+            BuySuperiorIdentificationKit()
+            RndSleep(500)
+            $J = $J + 1
+        Until FindIdentificationKit() <> 0 Or $J = 3
+        If $J = 3 Then Exit
+        RndSleep(500)
+    EndIf
  EndFunc ;RetrieveIdentificationKit
 #EndRegion Identification
 
 #Region Salvage
 Func Salvage()
-	Local $item, $bag
+    Local $item, $bag
 
-	For $i = 1 To $BAGS_TO_USE
-		$bag = Getbag($i)
+    For $i = 1 To $BAGS_TO_USE
+        $bag = Getbag($i)
 
-		For $j = 1 To DllStructGetData($bag, 'Slots')
-			$item = GetItemBySlot($i, $j)
-			If CanSalvage($item) Then
-				StartSalvage($item) ;noSleep
-				RndSleep(250)
-				SalvageMaterials()
-				RndSleep(250)
-			EndIf
-		Next
-	Next
+        For $j = 1 To DllStructGetData($bag, 'Slots')
+            $item = GetItemBySlot($i, $j)
+            If CanSalvage($item) Then
+                StartSalvage($item) ;noSleep
+                RndSleep(250)
+                SalvageMaterials()
+                RndSleep(250)
+            EndIf
+        Next
+    Next
 EndFunc ;Salvage
 Func CanSalvage($item)
-	Local $ModelID = DllStructGetData($item, "ModelId")
-	Local $rarity = GetRarity($item)
-	Local $requirement = GetItemReq($item)
+    Local $ModelID = DllStructGetData($item, "ModelId")
+    Local $rarity = GetRarity($item)
+    Local $requirement = GetItemReq($item)
 
-	If $rarity == $RARITY_GOLD		  Then Return False
-	If $rarity == $RARITY_BLUE		  Then Return True
-	If $rarity == $RARITY_PURPLE		Then Return False
+    If $rarity == $RARITY_GOLD		  Then Return False
+    If $rarity == $RARITY_BLUE		  Then Return True
+    If $rarity == $RARITY_PURPLE		Then Return False
 
-	If $ModelID == $ITEM_DYES Then
-		;Uncomment for Only black and white dyes
-		;Local $ExtraID = DllStructGetData($item, "ExtraId")
-		;Return $ExtraID <> $ITEM_BLACK_DYE And $ExtraID <> $ITEM_WHITE_DYE)
-		Return False
-	EndIf ;Dies
+    If $ModelID == $ITEM_DYES Then
+        ;Uncomment for Only black and white dyes
+        ;Local $ExtraID = DllStructGetData($item, "ExtraId")
+        ;Return $ExtraID <> $ITEM_BLACK_DYE And $ExtraID <> $ITEM_WHITE_DYE)
+        Return False
+    EndIf ;Dies
 
-	If $ModelID == $ITEM_DIESSA_CHALICE Then Return False
-	If $ModelID == $ITEM_RIN_RELIC Then Return False
-	If $ModelID == $ITEM_LOCKPICK Then Return False
-	If InArray($ModelID, $ALL_TOMES_ARRAY)		    Then Return False ;Tomes
-	If InArray($ModelID, $ALL_MATERIALS_ARRAY)		Then Return False ;Materials
-	If InArray($ModelID, $STACKABLE_TROPHIES_ARRAY)	Then Return False ;Trophies
-	If InArray($ModelID, $ALL_TITLE_ITEMS)			Then Return False ;Party, Alcohol, Sweet
-	If InArray($ModelID, $ALL_SCROLLS_ARRAY)		Then Return False ;Scrolls
-	If $ModelID == $ITEM_LOCKPICK		   		    Then Return False ;Lockpicks, Kits
-	If InArray($ModelID, $WEAPON_MOD_ARRAY)			Then Return False ;Weapon mods
+    If $ModelID == $ITEM_DIESSA_CHALICE Then Return False
+    If $ModelID == $ITEM_RIN_RELIC Then Return False
+    If $ModelID == $ITEM_LOCKPICK Then Return False
+    If InArray($ModelID, $ALL_TOMES_ARRAY)		    Then Return False ;Tomes
+    If InArray($ModelID, $ALL_MATERIALS_ARRAY)		Then Return False ;Materials
+    If InArray($ModelID, $STACKABLE_TROPHIES_ARRAY)	Then Return False ;Trophies
+    If InArray($ModelID, $ALL_TITLE_ITEMS)			Then Return False ;Party, Alcohol, Sweet
+    If InArray($ModelID, $ALL_SCROLLS_ARRAY)		Then Return False ;Scrolls
+    If $ModelID == $ITEM_LOCKPICK		   		    Then Return False ;Lockpicks, Kits
+    If InArray($ModelID, $WEAPON_MOD_ARRAY)			Then Return False ;Weapon mods
 
-	; TODO: do not pickup those
-	If InArray($ModelID, $MAP_PIECE_ARRAY)			Then Return False
-	If $rarity == $RARITY_WHITE 					Then Return True
+    ; TODO: do not pickup those
+    If InArray($ModelID, $MAP_PIECE_ARRAY)			Then Return False
+    If $rarity == $RARITY_WHITE 					Then Return True
 
-	Return False
+    Return False
 EndFunc ;CanSalvage
 #EndRegion
 
 
 #Region Sell
 Func Sell()
-	Local $item, $bag
+    Local $item, $bag
 
-	For $i = 1 To $BAGS_TO_USE
-		$bag = Getbag($i)
+    For $i = 1 To $BAGS_TO_USE
+        $bag = Getbag($i)
 
-		For $j = 1 To DllStructGetData($bag, 'Slots')
-			$item = GetItemBySlot($i, $j)
-			If DllStructGetData($item, "Id") == 0 Then ContinueLoop
-			If CanSell($item) Then 
-				SellItem($item) ;noSleep
-				RndSleep(250)
-			EndIf
-		Next
-	Next
+        For $j = 1 To DllStructGetData($bag, 'Slots')
+            $item = GetItemBySlot($i, $j)
+            If DllStructGetData($item, "Id") == 0 Then ContinueLoop
+            If CanSell($item) Then 
+                SellItem($item) ;noSleep
+                RndSleep(250)
+            EndIf
+        Next
+    Next
 EndFunc ;Sell
 Func CanSell($item)
-	Local $ModelID = DllStructGetData($item, "ModelId")
-	Local $rarity = GetRarity($item)
-	Local $requirement = GetItemReq($item)
+    Local $ModelID = DllStructGetData($item, "ModelId")
+    Local $rarity = GetRarity($item)
+    Local $requirement = GetItemReq($item)
 
-	If $rarity == $RARITY_GOLD		  Then Return False
-	If $rarity == $RARITY_BLUE		  Then Return True
-	If $rarity == $RARITY_PURPLE		Then Return True
+    If $rarity == $RARITY_GOLD		  Then Return False
+    If $rarity == $RARITY_BLUE		  Then Return True
+    If $rarity == $RARITY_PURPLE		Then Return True
 
-	If $ModelID == $ITEM_DYES Then
-		;Uncomment for Only black and white dyes
-		Local $ExtraID = DllStructGetData($item, "ExtraId")
-		Return $ExtraID <> $ITEM_BLACK_DYE And $ExtraID <> $ITEM_WHITE_DYE
-		Return False
-	EndIf ;Dies
+    If $ModelID == $ITEM_DYES Then
+        ;Uncomment for Only black and white dyes
+        Local $ExtraID = DllStructGetData($item, "ExtraId")
+        Return $ExtraID <> $ITEM_BLACK_DYE And $ExtraID <> $ITEM_WHITE_DYE
+        Return False
+    EndIf ;Dies
 
-	If InArray($ModelID, $ALL_TOMES_ARRAY)		  	Then Return False ;Tomes
-	If InArray($ModelID, $ALL_MATERIALS_ARRAY)		Then Return False ;Materials
-	If InArray($ModelID, $STACKABLE_TROPHIES_ARRAY)	Then Return False ;Trophies
-	If InArray($ModelID, $ALL_TITLE_ITEMS)			Then Return False ;Party, Alcohol, Sweet
-	If InArray($ModelID, $ALL_SCROLLS_ARRAY)		Then Return True ;Scrolls
-	If InArray($ModelID, $GENERAL_ITEMS_ARRAY)		Then Return False ;Lockpicks, Kits
-	If InArray($ModelID, $WEAPON_MOD_ARRAY)			Then Return False ;Weapon mods
+    If InArray($ModelID, $ALL_TOMES_ARRAY)		  	Then Return False ;Tomes
+    If InArray($ModelID, $ALL_MATERIALS_ARRAY)		Then Return False ;Materials
+    If InArray($ModelID, $STACKABLE_TROPHIES_ARRAY)	Then Return False ;Trophies
+    If InArray($ModelID, $ALL_TITLE_ITEMS)			Then Return False ;Party, Alcohol, Sweet
+    If InArray($ModelID, $ALL_SCROLLS_ARRAY)		Then Return True ;Scrolls
+    If InArray($ModelID, $GENERAL_ITEMS_ARRAY)		Then Return False ;Lockpicks, Kits
+    If InArray($ModelID, $WEAPON_MOD_ARRAY)			Then Return False ;Weapon mods
 
-	; TODO: do not pickup those
-	If InArray($ModelID, $MAP_PIECE_ARRAY)			Then Return True
-	If $rarity == $RARITY_WHITE 					Then Return True
+    ; TODO: do not pickup those
+    If InArray($ModelID, $MAP_PIECE_ARRAY)			Then Return True
+    If $rarity == $RARITY_WHITE 					Then Return True
 
-	Return True
+    Return True
 EndFunc ;CanSell
 #EndRegion Sell
 
 #Region Helpers
 Func InArray($modelId, $array)
-	For $p = 0 To (UBound($array) -1)
-		If $modelId == $array[$p] Then Return True
-	Next
-	Return False
+    For $p = 0 To (UBound($array) -1)
+        If $modelId == $array[$p] Then Return True
+    Next
+    Return False
 EndFunc
 #EndRegion Helpers
 
@@ -336,12 +336,12 @@ Global $TONIC_PARTY_ARRAY[23] = [4730, 15837, 21490, 22192, 30624, 30626, 30628,
 ;~ Special Drops
 Global $SPECIAL_DROPS[7] = [556, 18345, 21491, 37765, 21833, 28433, 28434]
 #cs
-	CC_Shard = 556
-	Flame_of_Balthazar = 2514
-	Golden_Flame_of_Balthazar = 22188
-	Celestial_Sigil = 2571
-	Wintersday_Gift = 21491
-	Wayfarer_Mark = 37765
+    CC_Shard = 556
+    Flame_of_Balthazar = 2514
+    Golden_Flame_of_Balthazar = 22188
+    Celestial_Sigil = 2571
+    Wintersday_Gift = 21491
+    Wayfarer_Mark = 37765
 Global Const $ITEM_ID_TOTS = 28434
 Global Const $ITEM_ID_VICTORY_TOKEN = 18345
 Global Const $ITEM_ID_LUNAR_TOKEN = 21833
@@ -356,31 +356,31 @@ Global $ALL_MATERIALS_ARRAY[36] = [921, 922, 923, 925, 926, 927, 928, 929, 930, 
 Global $COMMON_MATERIALS_ARRAY[11] = [921, 925, 929, 933, 934, 940, 946, 948, 953, 954, 955]
 Global $RARE_MATERIALS_ARRAY[25] = [922, 923, 926, 927, 928, 930, 931, 932, 935, 936, 937, 938, 939, 941, 942, 943, 944, 945, 949, 950, 951, 952, 956, 6532, 6533]
 #cs
-	Lumps of Charcoal 922
-	Monstrous Claws 923
-	Bolt of Linen 926
-	Bolt of Damask 927
-	Bolt of Silk 928
-	Glob of Ectoplasm 930
-	Monstrous Eye 931
-	Monstrous Fangs 932
-	Diamonds 935
-	Onyx Gemstones 936
-	Rubies 937
-	Sapphires 938
-	Tempered Glass Vial 939
-	Fur Square 941
-	Leather Squares 942
-	Elonian Leather Square 943
-	Vial of Ink 944
-	Obsidian Shard 945
-	Steel of Ignot 949
-	Deldrimor Steel Ingot 950
-	Rolls of Parchment 951
-	Rolls of Vellum 952
-	Spiritwood Planks 956
-	Amber Chunk 6532
-	Jadeite Shard 6533
+    Lumps of Charcoal 922
+    Monstrous Claws 923
+    Bolt of Linen 926
+    Bolt of Damask 927
+    Bolt of Silk 928
+    Glob of Ectoplasm 930
+    Monstrous Eye 931
+    Monstrous Fangs 932
+    Diamonds 935
+    Onyx Gemstones 936
+    Rubies 937
+    Sapphires 938
+    Tempered Glass Vial 939
+    Fur Square 941
+    Leather Squares 942
+    Elonian Leather Square 943
+    Vial of Ink 944
+    Obsidian Shard 945
+    Steel of Ignot 949
+    Deldrimor Steel Ingot 950
+    Rolls of Parchment 951
+    Rolls of Vellum 952
+    Spiritwood Planks 956
+    Amber Chunk 6532
+    Jadeite Shard 6533
 #ce
 
 ;~ Title Items (Alcohol, Party, Sweets)
@@ -390,20 +390,20 @@ Global $ITEMS_SWEETS_PVE[13] = [17060, 17061, 17062, 22269, 22752, 28431, 28432,
 Global $ITEMS_PARTY[7] = [6368, 6369, 6376, 21809, 21810, 21813, 36683]
 Global $ITEMS_DP_REMOVAL[8] = [6370, 19039, 21488, 21489, 22191, 26784, 28433, 35127]
 #cs
-	Global Const $ITEM_ID_GOLDEN_EGGS = 22752
-	Global Const $ITEM_ID_BUNNIES = 22644
-	Global Const $ITEM_ID_PIE = 28436
-	Global Const $ITEM_ID_CIDER = 28435
-	Global Const $ITEM_ID_POPPERS = 21810
-	Global Const $ITEM_ID_ROCKETS = 21809
-	Global Const $ITEM_ID_CUPCAKES = 22269
-	Global Const $ITEM_ID_SPARKLER = 21813
-	Global Const $ITEM_ID_HONEYCOMB = 26784
-	Global Const $ITEM_ID_HUNTERS_ALE = 910
-	Global Const $ITEM_ID_GROG = 30855
-	Global Const $ITEM_ID_CLOVER = 22191
-	Global Const $ITEM_ID_KRYTAN_BRANDY = 35124
-	Global Const $ITEM_ID_BLUE_DRINK = 21812
+    Global Const $ITEM_ID_GOLDEN_EGGS = 22752
+    Global Const $ITEM_ID_BUNNIES = 22644
+    Global Const $ITEM_ID_PIE = 28436
+    Global Const $ITEM_ID_CIDER = 28435
+    Global Const $ITEM_ID_POPPERS = 21810
+    Global Const $ITEM_ID_ROCKETS = 21809
+    Global Const $ITEM_ID_CUPCAKES = 22269
+    Global Const $ITEM_ID_SPARKLER = 21813
+    Global Const $ITEM_ID_HONEYCOMB = 26784
+    Global Const $ITEM_ID_HUNTERS_ALE = 910
+    Global Const $ITEM_ID_GROG = 30855
+    Global Const $ITEM_ID_CLOVER = 22191
+    Global Const $ITEM_ID_KRYTAN_BRANDY = 35124
+    Global Const $ITEM_ID_BLUE_DRINK = 21812
 #ce
 
 Global $ALL_TITLE_ITEMS[49]=[910, 2513, 5585, 6049, 6366, 6367, 6375, 15477, 19171, 19172, 19173, 22190, 24593, 28435, 30855, 31145, 31146, 35124, 36682, 15528, 15479, 19170, 21492, 21812, 22644, 30208, 31150, 35125, 36681, 17060, 17061, 17062, 22269, 22752, 28431, 28432, 28436, 29431, 31151, 31152, 31153, 35121, 6368, 6369, 6376, 21809, 21810, 21813, 36683]
