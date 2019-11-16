@@ -369,11 +369,7 @@ Func WaitForLoad()
 EndFunc ;WaitForLoad
 
 Func Death()
-    If DllStructGetData(GetAgentByID(-2), "Effects") = 0x0010 Then
-        Return 1	; Whatever you want to put here in case of death
-    Else
-        Return 0
-    EndIf
+    Return DllStructGetData(GetAgentByID(-2), "Effects") == 0x0010
 EndFunc ;Death
 
 Func GetLockpicksCount() 
@@ -410,32 +406,4 @@ EndFunc
 Func VerifyConnection()
     If GetMapLoading() == 2 Then Disconnected()
 EndFunc ;VerifyConneciton
-
-Func Disconnected()
-    Out("Disconnected!")
-    Out("Attempting to reconnect.")
-    ControlSend(GETWINDOWHANDLE(), "", "", "{Enter}")
-    Local $LCHECK = False
-    Local $LDEADLOCK = TimerInit()
-    Do
-        RndSleep(20)
-        $LCHECK = GETMAPLOADING() <> 2 And GETAGENTEXISTS(-2)
-    Until $LCHECK Or TimerDiff($LDEADLOCK) > 60000
-    If $LCHECK = False Then
-        Out("Failed to Reconnect!")
-        Out("Retrying.")
-        ControlSend(GETWINDOWHANDLE(), "", "", "{Enter}")
-        $LDEADLOCK = TimerInit()
-        Do
-            RndSleep(20)
-            $LCHECK = GETMAPLOADING() <> 2 And GETAGENTEXISTS(-2)
-        Until $LCHECK Or TimerDiff($LDEADLOCK) > 60000
-        If $LCHECK = False Then
-            Out("Could not reconnect!")
-            Out("Exiting.")
-        EndIf
-    EndIf
-    Out("Reconnected!")
-    RndSleep(5000)
-EndFunc ;Disconnected
 #EndRegion Funcs
