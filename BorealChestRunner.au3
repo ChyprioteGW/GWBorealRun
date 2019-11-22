@@ -5,10 +5,11 @@
 #include <WindowsConstants.au3>
 #include "../GWA2.au3"
 #include "../SimpleInventory.au3"
+#include "../Extras.au3"
+AUTOITSETOPTION("TrayIconDebug", 1)
 
 Opt("GUIOnEventMode", True)
 Opt("GUICloseOnESC", False)
-Opt("TrayIconHide", 1)
 
 
 #cs
