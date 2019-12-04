@@ -48,6 +48,7 @@ Global $Seconds = 0
 Global $Minutes = 0
 Global $Hours = 0
 Global $BOREAL_STATION = 675
+Global $ICE_CLIFF_CHASM = 499
 
 Global $GoldsCount = 0
 Global $TreasureTitle = 0
@@ -131,7 +132,10 @@ While 1
     GoOut()
     ChestRun()
     HandlePause()
-    If InventoryIsFull() Then Inventory()
+    If InventoryIsFull() Then
+        Inventory()
+        MoveTo(5673, -27460)
+    EndIf
     If Getchecked($Purge) Then PurgeHook()
 WEnd
 
@@ -169,23 +173,22 @@ Func TravelToOutpost()
     If GetMapID() == $BOREAL_STATION Then Return
     Out("Travelling to Boreal Station")
 
-    ZoneMap($BOREAL_STATION, 0)
-    WaitForLoad()
-EndFunc
+    TravelTo($BOREAL_STATION)
+EndFunc ;TravelToOutpost
 
 Func Setup()
     Out("Setup resign")
     MoveTo(5520, -27828)
     MoveTo(4700, -27817)
-    WaitForLoad()
+    WaitMapLoading($ICE_CLIFF_CHASM)
     MoveTo(5480, -27913)
-    WaitForLoad()
+    WaitMapLoading($BOREAL_STATION)
 EndFunc ;Setup
 
 Func GoOut()
     Out("Going Out")
-    MoveTo(4637, -27817)
-    WaitForLoad()
+    Move(4637, -27817)
+    WaitMapLoading($ICE_CLIFF_CHASM)
 EndFunc ;GoOut
 
 Func ChestRun()
@@ -195,7 +198,7 @@ Func ChestRun()
     AdlibRegister("Running", 1000)
     Out("Starting Run")
 	
-    If DllStructGetData(GetSkillbar(), 'Recharge1') = 0 AND  DllStructGetData($me, 'EnergyPercent') >= 0.10 And $WeAreDead = False Then
+    If DllStructGetData(GetSkillbar(), 'Recharge1') = 0 And DllStructGetData($me, 'EnergyPercent') >= 0.10 And $WeAreDead = False Then
         UseSkill(1, 0)
         RndSleep(800)
     EndIf
@@ -208,53 +211,48 @@ Func ChestRun()
 
     Out("Waypoint 3")
     If Not $WeAreDead Then MoveTo(-3478, -18092)
-    TargetNearestItem()
-    RndSleep(500)
-    If DllStructGetData(GetCurrentTarget(), 'Type') = 512 And Not $WeAreDead Then DoChest()
+    If Not $WeAreDead Then DoChest()
 
     Out("Waypoint 4")
     If Not $WeAreDead Then MoveTo(-5432, -15037)
-    TargetNearestItem()
-    RndSleep(500)
-    If DllStructGetData(GetCurrentTarget(), 'Type') = 512 And Not $WeAreDead Then DoChest()
+    If Not $WeAreDead Then DoChest()
 
     Out("Waypoint 5")
     If Not $WeAreDead Then MoveTo(-5744, -11911)
-    TargetNearestItem()
-    RndSleep(500)
-    If DllStructGetData(GetCurrentTarget(), 'Type') = 512 And Not $WeAreDead Then DoChest()
+    If Not $WeAreDead Then DoChest()
 
+    Out("Waypoint 6")
     If Not $WeAreDead Then MoveTo(-3863, -11372)
-    TargetNearestItem()
-    RndSleep(500)
-    If DllStructGetData(GetCurrentTarget(), 'Type') = 512 And Not $WeAreDead Then DoChest()
+    If Not $WeAreDead Then DoChest()
 
     AdlibUnRegister("CheckDeath")
     AdlibUnRegister("Running")
+    Out("Going back")
     Do
         Resign()
         RndSleep(8000)
     Until GetIsDead()
 
     ReturnToOutpost()
-    WaitForLoad()
-    RndSleep(4000)
-EndFunc
+    WaitMapLoading($BOREAL_STATION)
+EndFunc ;ChestRun
 
 Func Running()
-    Local $me = GetAgentByID(-2)
-    If DllStructGetData(GetSkillbar(), 'Recharge2') = 0 AND  DllStructGetData($me, 'EnergyPercent') >= 0.10 And $WeAreDead = False Then
+    If DllStructGetData(GetSkillbar(), 'Recharge2') = 0 And not $WeAreDead Then
         UseSkillEx(1) ;Dwarven Stability
+        RndSleep(200)
         UseSkillEx(2) ;Dash
-        If GetChecked ($UseIAU) Then UseSkillEx(3)
+        RndSleep(200)
+        If GetChecked($UseIAU) Then UseSkillEx(3)
+        RndSleep(200)
     EndIf
 EndFunc ;Running
 
 Func DoChest()
     Local $TimeCheck = TimerInit()
     TargetNearestItem()
-    Out("Opening Chest")
     If DllStructGetData(GetCurrentTarget(), 'Type') <> 512 Then Return
+    Out("Opening Chest")
 
     GoSignpost(-1)
     $chest = GetCurrentTarget()
@@ -263,26 +261,44 @@ Func DoChest()
 
     Do
         Sleep(1000)
-    Until CheckArea($oldCoordsX, $oldCoordsY) Or TimerDiff($TimeCheck) > 5000 Or $WeAreDead
+    Until CheckArea($oldCoordsX, $oldCoordsY) Or TimerDiff($TimeCheck) > 10000 Or $WeAreDead
 
     OpenChest()
     RndSleep(1000)
-    TargetNearestItem()
-    $item = GetCurrentTarget()
-    PickUpItem($item)
-
-    Do
-        Sleep(1000)
-    Until DllStructGetData($item, 'AgentID') == 1 Or TimerDiff($TimeCheck) > 10000 or $WeAreDead
+    PickupLootEx2()
 EndFunc ;DoChest
+
+Func PickupLootEx2($iMaxDist = 3000, $bCanPickup = True)
+	$lMe = GetAgentByID(-2)
+	For $i = 1 To GetMaxAgents()
+		$aAgent = GetAgentByID($i)
+		If Not GetIsMovable($aAgent) Then ContinueLoop
+		$aItem = GetItemByAgentID($i)
+		$aItemX = DllStructGetData($aAgent, "x")
+		$aItemY = DllStructGetData($aAgent, "y")
+		If ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), $aItemX, $aItemY) < $iMaxDist Then
+			MoveTo($aItemX, $aItemY)
+			TolSleep(300)
+			Do
+				PickUpItem($aItem)
+			Until Not GetAgentExists($aAgent)
+			$lDeadlock = TimerInit()
+			While GetAgentExists($aAgent)
+				Sleep(50)
+				If GetIsDead(-2) Then Return
+				If TimerDiff($lDeadlock) > 25000 Then ExitLoop
+			Wend
+		EndIf
+	Next
+EndFunc ;PickupLootEx
 #EndRegion Chestrun
 
 #Region Funcs
 Func HandlePause()
     While Not $BotRunning
-    RndSleep(100)
-    GUICtrlSetData($Start, "Resume")
-    GUICtrlSetState($Start, $GUI_ENABLE)
+        RndSleep(100)
+        GUICtrlSetData($Start, "Resume")
+        GUICtrlSetState($Start, $GUI_ENABLE)
     WEnd
     GUICtrlSetData($Start, "Pause")
 EndFunc ;HandlePause
@@ -292,7 +308,7 @@ Func _exit()
 EndFunc ;_exit
 
 Func CheckDeath()
-    If Death() = 1 Then
+    If GetIsDead() Then
         $WeAreDead = True
         Out("We Are Dead")
     EndIf
@@ -344,35 +360,6 @@ Func PurgeHook()
     RndSleep(2000)
 EndFunc ;PurgeHook
 
-Func WaitForLoad()
-    Out("Loading zone")
-    InitMapLoad()
-    $deadlock = 0
-    Do
-        RndSleep(100)
-        $deadlock += 100
-        $load = GetMapLoading()
-        $lMe = GetAgentByID(-2)
-
-    Until $load = 2 And DllStructGetData($lMe, 'X') = 0 And DllStructGetData($lMe, 'Y') = 0 Or $deadlock > 20000
-
-    $deadlock = 0
-    Do
-        RndSleep(100)
-        $deadlock += 100
-        $deadlock += 100
-        $load = GetMapLoading()
-        $lMe = GetAgentByID(-2)
-
-    Until $load <> 2 And DllStructGetData($lMe, 'X') <> 0 And DllStructGetData($lMe, 'Y') <> 0 Or $deadlock > 30000
-    Out("Load complete")
-    RndSleep(3000)
-EndFunc ;WaitForLoad
-
-Func Death()
-    Return DllStructGetData(GetAgentByID(-2), "Effects") == 0x0010
-EndFunc ;Death
-
 Func GetLockpicksCount() 
     Local $AmountPicks = 0
     Local $aBag
@@ -389,8 +376,7 @@ Func GetLockpicksCount()
 EndFunc ;GetLockpicksCount
 
 Func UseSkillEx($lSkill, $lTgt=-2, $aTimeout = 10000)
-    Local $lme = GetAgentByID(-2)
-    If GetIsDead($lme) Then Return
+    If GetIsDead() Then Return
     If Not IsRecharged($lSkill) Then Return
 
     Local $lDeadlock = TimerInit()
@@ -398,10 +384,13 @@ Func UseSkillEx($lSkill, $lTgt=-2, $aTimeout = 10000)
 
     Do
         RndSleep(50)
-        If GetIsDead($lme) = 1 Then Return
+        If GetIsDead() Then Return
     Until (Not IsRecharged($lSkill)) Or (TimerDiff($lDeadlock) > $aTimeout)
+EndFunc
 
-    If $lSkill > 1 Then RndSleep(750)
+Func GoMerchant()
+    GoToNPC(GetNearestNPCToCoords(7319, -24874))
+    RndSleep(550)
 EndFunc
 
 Func VerifyConnection()
