@@ -36,7 +36,7 @@ Opt("GUICloseOnESC", False)
     ~Add optional settings to keep spears, scythes or other weapons needed for heroes
     ~Add optional pro build to increase survival when picking up items (especially last chest)
     ~Adjust OpenChest settings so the chest is opened from max distance (This way no needed to run to chest if no golds to pickup
-    ~To increase speed of the run, rewrite chest function and make it go: Move(xxx-xxx) ---> CheckChest/Open Chest ---> MoveTo(xxx-xxx) ---> PickupLoot	
+    ~To increase speed of the run, rewrite chest function and make it go: Move(xxx-xxx) ---> CheckChest/Open Chest ---> MoveTo(xxx-xxx) ---> PickupLoot
 #ce
 
 #Region
@@ -85,7 +85,7 @@ Global $Runs  = 0
 
     GUICtrlCreateGroup("Lucky", 80, 110, 65, 35, BitOr(1, $BS_CENTER))
     Global Const $LBL_LuckyTitle = GUICtrlCreateLabel($LuckyTitle, 85, 125, 55, 15, BitOr(1, $BS_CENTER))
-	
+
     GUICtrlCreateGroup("Unlucky", 150, 110, 65, 35, BitOr(1, $BS_CENTER))
     Global Const $LBL_UnluckyTitle = GUICtrlCreateLabel($UnluckyTitle, 155, 125, 55, 15, BitOr(1, $BS_CENTER))
 
@@ -103,7 +103,7 @@ Global $Runs  = 0
 
 
 While 1
-    If Not $Botrunning Then 
+    If Not $Botrunning Then
         Sleep(50)
         ContinueLoop
     EndIf
@@ -134,7 +134,10 @@ While 1
     HandlePause()
     If InventoryIsFull() Then
         Inventory()
+        MoveTo(6509, -26221)
+        MoveTo(5546, -27878)
         MoveTo(5673, -27460)
+        RndSleep(1000)
     EndIf
     If Getchecked($Purge) Then PurgeHook()
 WEnd
@@ -177,11 +180,12 @@ Func TravelToOutpost()
 EndFunc ;TravelToOutpost
 
 Func Setup()
+    LoadSkillTemplate("OwET0YIWV6usrgmktAkAAAAAAAA")
     Out("Setup resign")
     MoveTo(5520, -27828)
-    MoveTo(4700, -27817)
+    Move(4700, -27817)
     WaitMapLoading($ICE_CLIFF_CHASM)
-    MoveTo(5480, -27913)
+    Move(5480, -27913)
     WaitMapLoading($BOREAL_STATION)
 EndFunc ;Setup
 
@@ -197,7 +201,7 @@ Func ChestRun()
     AdlibRegister("CheckDeath", 1000)
     AdlibRegister("Running", 1000)
     Out("Starting Run")
-	
+
     If DllStructGetData(GetSkillbar(), 'Recharge1') = 0 And DllStructGetData($me, 'EnergyPercent') >= 0.10 And $WeAreDead = False Then
         UseSkill(1, 0)
         RndSleep(800)
@@ -205,7 +209,7 @@ Func ChestRun()
 
     Out("Waypoint 1")
     If Not $WeAreDead Then MoveTo(2900, -25000)
-		
+
     Out("Waypoint 2")
     If Not $WeAreDead Then MoveTo(-858, -19407)
 
@@ -238,14 +242,13 @@ Func ChestRun()
 EndFunc ;ChestRun
 
 Func Running()
-    If DllStructGetData(GetSkillbar(), 'Recharge2') = 0 And not $WeAreDead Then
+    If DllStructGetData(GetSkillbar(), 'Recharge2') == 0 And not $WeAreDead Then
         UseSkillEx(1) ;Dwarven Stability
-        RndSleep(200)
         UseSkillEx(2) ;Dash
-        RndSleep(200)
-        If GetChecked($UseIAU) Then UseSkillEx(3)
-        RndSleep(200)
     EndIf
+    If GetHasCondition() And GetChecked($UseIAU) Then UseSkillEx(3)
+    UseSkillEx(4) ;Dash
+    If DllStructGetData(GetAgentByID(), 'HP') < 0.8 Then UseSkillEx(5)
 EndFunc ;Running
 
 Func DoChest()
@@ -360,12 +363,12 @@ Func PurgeHook()
     RndSleep(2000)
 EndFunc ;PurgeHook
 
-Func GetLockpicksCount() 
+Func GetLockpicksCount()
     Local $AmountPicks = 0
     Local $aBag
     Local $aItem
 
-    For $i = 1 To 4 
+    For $i = 1 To 4
         $aBag = GetBag($i)
         For $j = 1 To DllStructGetData($aBag, "Slots")
             $aItem = GetItemBySlot($aBag, $j)
@@ -386,6 +389,7 @@ Func UseSkillEx($lSkill, $lTgt=-2, $aTimeout = 10000)
         RndSleep(50)
         If GetIsDead() Then Return
     Until (Not IsRecharged($lSkill)) Or (TimerDiff($lDeadlock) > $aTimeout)
+    RndSleep(200)
 EndFunc
 
 Func GoMerchant()
